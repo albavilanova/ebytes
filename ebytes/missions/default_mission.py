@@ -2,10 +2,11 @@
 
 class Mission(object):
 
-    def __init__(self, path=None, parameter=None, start_date=None, 
+    def __init__(self, mission=None, path=None, parameter=None, start_date=None, 
                  end_date=None, lon_min=None, lon_max=None, lat_min=None, 
                  lat_max=None, **kwargs):
-      
+
+        self.mission = mission
         self.path = path
         self.parameter = parameter
         self.start_date = start_date
