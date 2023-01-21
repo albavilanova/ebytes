@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import os
+import subprocess
 import geojson
 import pandas as pd
 import numpy as np
 import datetime as dt
-import subprocess
+import xarray as xr
+import gzip
 from sentinelsat.sentinel import SentinelAPI, geojson_to_wkt
 from .default_mission import Mission
 
@@ -24,7 +26,6 @@ class Sentinel5p(Mission):
                                                                
       self.processing_lev = processing_lev
       self.input_type = input_type
-
       self.check_validity()
 
    def check_validity(self):
@@ -191,20 +192,87 @@ class Sentinel5p(Mission):
             year = date.split('-')[0]
             month = date.split('-')[1]
             
-            filename_path = self.path + '/' + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
-                                    + year + '-'  + month
-            os.makedirs(filename_path, exist_ok=True) 
+            file_path = self.path + '/' + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
+                           + year + '-'  + month
+            os.makedirs(file_path, exist_ok=True) 
             product_name = 'TROPOMI_L3_NO2_COLUMN_' + year + month + '.asc.gz'
-            filename =filename_path + '/' + product_name
 
             path = ('https://d1qb6yzwaaq4he.cloudfront.net/tropomi/' \
                      + self.parameter.lower() + '/' + year \
                      + '/' + month + '/' + self.parameter.lower() + '_' + year + month + '.asc.gz')
-            subprocess.run(['wget', '-q', '-nc', path, '-O', filename_path + '/' + product_name])
-            print(filename)
-            if os.stat(filename).st_size == 0:  
-               os.remove(filename) 
+            subprocess.run(['wget', '-q', '-nc', path, '-O', file_path + '/' + product_name])
+            print(file_path + '/' + product_name)
+            if os.stat(file_path + '/' + product_name).st_size == 0:  
+               os.remove(file_path + '/' + product_name) 
                print(product_name, 'is not available.')
 
             else:
                print(product_name, 'was downloaded.')
+
+   def read(self, file, date):
+      """ Read datasets as xarray.
+
+          Parameters
+          ----------
+          file : str
+            File name.
+          date : str
+            Date for which the data will be read. Format: YYYY-MM-DD.
+      """
+
+      if self.processing_lev == 'L2':
+
+         file_path = self.path + '/' + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
+                        + date
+         xr_data = xr.open_dataset(file_path + '/' + file, group = 'PRODUCT')
+
+      elif self.processing_lev == 'L3':
+         
+         year = date.split('-')[0]
+         month = date.split('-')[1]
+         time = dt.datetime(int(year), int(month), 1)
+         file_path = self.path + '/' + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
+                        + year + '-' + month
+
+         # Reconstruct file
+         data = []
+         with gzip.open(file_path + '/' + file, 'rt', encoding='utf-8') as f:
+            
+            i = 0    
+            lon = -179.9375
+
+            for line in f:    
+                
+                if i > 3:
+
+                    if 'lat' in line:
+                        lat = float(line.replace('lat=  ', ''))
+                        lon = -179.9375
+
+                    else: 
+
+                        line = line.replace('\n', '')
+
+                        for value in [line[i:i+4] for i in range(0, len(line), 4)]:
+                            
+                            if value == '-999':
+                                value = np.nan
+                                
+                            else:
+                                value = float(value.replace(' ', ''))
+                                value = value*10**13
+                             
+                            data.append({'time': time, 
+                                         'latitude': lat, 
+                                         'longitude': lon, 
+                                         self.parameter: value})
+                            lon += 0.125
+                            
+                i += 1
+
+         data = pd.DataFrame(data)
+         data = data.set_index(['time', 'latitude', 'longitude'])
+         data = data[~data.index.duplicated()]
+         xr_data = data.to_xarray()
+
+      return xr_data
