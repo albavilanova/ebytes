@@ -9,19 +9,15 @@ from matplotlib import pyplot as plt
 
 class Mission(object):
 
-    def __init__(self, mission=None, path=None, parameter=None, start_date=None, 
-                 end_date=None, lon_min=None, lon_max=None, lat_min=None, 
-                 lat_max=None, **kwargs):
+    def __init__(self, mission=None, path=None, processing_lev=None, parameter=None, 
+                 start_date=None, end_date=None, **kwargs):
 
         self.mission = mission
         self.path = path
         self.parameter = parameter
         self.start_date = start_date
         self.end_date = end_date
-        self.lon_min = lon_min
-        self.lon_max = lon_max
-        self.lat_min = lat_min
-        self.lat_max = lat_max
+        self.processing_lev = processing_lev
     
     def download(self):
 
