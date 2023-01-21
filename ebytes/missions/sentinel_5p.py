@@ -13,19 +13,19 @@ from .default_mission import Mission
 
 class Sentinel5p(Mission):
    
-   def __init__(self, mission='sentinel-5p', path=None, processing_lev=None, parameter=None, input_type=None, 
-                start_date=None, end_date=None, lon_min=None,  lon_max=None, 
-                lat_min=None, lat_max=None, **kwargs):
+   def __init__(self, mission='sentinel-5p', path=None, processing_lev=None, parameter=None, 
+                start_date=None, end_date=None, input_type=None, lon_min=None, lon_max=None, lat_min=None, lat_max=None, 
+                **kwargs):
 
       super(Sentinel5p, self).__init__(mission=mission, path=path, processing_lev=processing_lev, 
-                                       parameter=parameter, input_type=input_type, 
-                                       start_date=start_date, end_date=end_date, 
-                                       lon_min=lon_min, lon_max=lon_max, 
-                                       lat_min=lat_min, lat_max=lat_max,
+                                       parameter=parameter, start_date=start_date, end_date=end_date, 
                                        **kwargs)
-                                                               
-      self.processing_lev = processing_lev
+                                
       self.input_type = input_type
+      self.lon_min = lon_min
+      self.lon_max = lon_max
+      self.lat_min = lat_min
+      self.lat_max = lat_max
       self.check_validity()
 
    def check_validity(self):
@@ -77,7 +77,7 @@ class Sentinel5p(Mission):
 
       # Get list of dates
       dates = self.search_period()
-
+      
       if self.processing_lev == 'L2':
 
          # Initialize API
@@ -94,15 +94,16 @@ class Sentinel5p(Mission):
             product_name = input('Write product name:')
 
             for date in dates:
+               
+               file_path = self.path + date[0].split('T')[0]
 
-               if os.path.isfile(filename_path):
+               if os.path.isfile(file_path):
                   print('The file exists, it will not be downloaded again.')
 
                else:
                   print('The file does not exist, it will be downloaded.')
                   print(f'Downloading {product_name}...')
-                  filename_path = self.path + date[0].split('T')[0]
-                  api.download(filename, directory_path = filename_path)
+                  api.download(filename, directory_path = file_path)
 
          elif self.input_type == 'query':
 
@@ -169,19 +170,19 @@ class Sentinel5p(Mission):
             print('File name:', filename)
             print('Product name:', product_name)
             
-            filename_path = self.path + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
-                             + date[0].split('T')[0]
+            file_path = self.path + self.mission + '/' + self.processing_lev + '/' + self.parameter + '/' \
+                           + date[0].split('T')[0]
 
-            if os.path.isfile(filename_path + '/' + product_name):
+            if os.path.isfile(file_path + '/' + product_name):
                print('The file exists, it will not be downloaded again.')
 
             else:
                print('The file does not exist, it will be downloaded.')
                print(f'Downloading {product_name}...')
-               api.download(filename, directory_path=filename_path)
+               api.download(filename, directory_path=file_path)
 
-         if not os.listdir(filename_path):
-            os.rmdir(filename_path)
+         if not os.listdir(file_path):
+            os.rmdir(file_path)
          else:
             print('Dataset was successfully downloaded!')
 

@@ -2,15 +2,29 @@
 
 from .missions import *
 
-def download_dataset(mission, path, processing_lev, parameter, input_type, 
-                     start_date, end_date, lon_min, lon_max, lat_min, lat_max, 
-                     **kwargs):
-    """ Initialise dataset and download product. """
-
+def download_dataset(mission, path, processing_lev, parameter, start_date, end_date, **kwargs):
+    """ Initialise dataset and download product.
+        
+        Parameters
+        ----------
+        mission : str
+          Mission name. Accepted values: ['sentinel-5p].
+        path : str
+          Output path.
+        processing_lev : str
+          Processing level of satellite product. Accepted values: ['L2', 'L3'].
+        parameter : str
+          Species name.
+        start_date : str
+          Start date for which the data will be read. Format: YYYY-MM-DD.
+        end_date : str
+          End date for which the data will be read. Format: YYYY-MM-DD.
+    """
+    
     if mission == 'sentinel-5p':
         explorer = Sentinel5p(mission=mission, path=path, processing_lev=processing_lev, 
-                              parameter=parameter, input_type=input_type, start_date=start_date, end_date=end_date, 
-                              lon_min=lon_min, lon_max=lon_max, lat_min=lat_min, lat_max=lat_max, **kwargs)
+                              parameter=parameter, start_date=start_date, end_date=end_date, 
+                              **kwargs)
 
     else:
         msg = 'Data from {} cannot be retrieved using ebytes.'.format(mission)
